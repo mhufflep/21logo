@@ -1,112 +1,135 @@
 #include "logo.h"
 
-char	generate_numeric_char()
-{
-	return ((char)(48 + random() % 2));
+inline
+char	gen_char(char min, char max) {
+	return (min + rand() % (max - min + 1));
 }
 
-void	reset_settings(int *counter, int keys[], int *row_key)
-{
-	int i;
-	*counter = 0;
-	*row_key = 0;
-	
-	i = 0;
-	while (i < KEYS)
-		keys[i++] = 0;
-}
+inline
+void 	print_line(int opened[], int idxs[], int idxs_len, int line_num, int offset) {
 
-void	print_iter(int keys[KEYS])
-{
-	int i;
-	int j;
-	int k;
-	
-	i = 0;
-	while (i < ARR_ROWS)
+	int i = 0;
+	while (i < idxs_len)
 	{
-		k = 0;
-		while (k < ARR_LETTERS)
-		{
-			j = 0;
-			while (j < ARR_COLS)
-			{
-				if (keys[i] == 1)
-					print_static_line(arr[k][i][j]);
-				else
-					print_colored_symbol(FG_COLOR_GREEN, generate_numeric_char());
-				j++;
-			}
-			k++;
+		const int idx = idxs[i];
+		const char line = (symbols[idx] >> offset) & 0xF;
+		
+		if (opened[line_num]) {
+			print_opened_line(FG_COLOR_WHITE, line);
+		} else {
+			print_closed_line(FG_COLOR_GREEN);
 		}
-		printf("\n");
+
 		i++;
+	}
+	printf("\n");
+}
+
+void	print_logo(int opened[], int idxs[], int idxs_len)
+{
+	int offset = 32 - SYMBOL_WIDTH;
+	for (size_t line = 0; line < SYMBOL_HEIGHT; line++)
+	{
+		for (size_t sc = 0; sc < SCALE_X; sc++)
+		{
+			print_line(opened, idxs, idxs_len, line, offset);
+		}
+		offset -= SYMBOL_WIDTH;
 	}
 }
 
-void	print_logo() {
-	int counter;
-	int row_key;
-	int keys[KEYS];
+void	logo_cycle(int *indices, size_t length) {
+
+	int i = 0;
+	int line = 0;
+	int opened_lines[SYMBOL_HEIGHT] = { 0 };
 	
-	reset_settings(&counter, keys, &row_key);
-	while (counter < MAX_COUNTER)
+	srand(time(0));
+	while (i < MAX_COUNTER)
 	{
-		clean_screen();
-		if (counter % DIVIDER == DIVIDER - 1)
-		{
-			keys[row_key] = 1;
-			row_key++;
+		// clears screen
+		printf("\e[1;1H\e[2J");
+
+		if (i % DIVIDER == DIVIDER - 1) {
+			opened_lines[line] = 1;
+			line++;
 		}
-		print_iter(keys);
-		counter++;
+		print_logo(opened_lines, indices, length);
+		i++;
+	
 		delay(DELAY_VALUE_MMS);
 	}
 	delay(DELAY_BTWN_ITER);
 	printf("\n"); 
 }
 
-void	delay(int milli_seconds)
-{
-	clock_t start_time;
-   
-	start_time = clock();
+void	delay(int milli_seconds) {
+	clock_t start_time = clock();
 	while (clock() < start_time + milli_seconds);
 }
 
-int     is_numeric(char symbol)
-{
-	return (symbol >= '0' && symbol <= '9');
+void	print_opened_line(const char *color, char line) {
+
+	for (size_t i = 0; i < SYMBOL_WIDTH; i++) {
+		if ((line >> (SYMBOL_WIDTH - i - 1)) & 0x1) {
+			print_symbol(RANDOM_SYMBOL, color);
+		} else {
+			print_symbol(EMPTY, "");
+		}
+	}
+
+	// Space between letters
+	print_symbol(EMPTY, "");
 }
 
-void	print_colored_symbol(const char *color, char symbol)
-{
-	set_color(color);
-	printf("%c", symbol);
+inline
+void	print_closed_line(const char *color) {
+
+	for (size_t i = 0; i < SYMBOL_WIDTH; i++) {
+		print_symbol(RANDOM_SYMBOL, color);
+	}
+
+	// Space between letters
+	print_symbol(RANDOM_SYMBOL, color);
 }
 
-void	print_static_line(char c)
-{
-	if (is_numeric(c))
-		print_colored_symbol(FG_COLOR_WHITE, c);
-	else
-		printf("%c", EMPTY);
+inline 
+void	print_symbol(const char c, const char *color) {
+
+	for (size_t i = 0; i < SCALE_Y; i++) {
+		if (c == RANDOM_SYMBOL) {
+			printf("%s%c", color, gen_char(RANDOM_MIN, RANDOM_MAX));
+		} else {
+			printf("%s%c", color, c);
+		}
+	}
 }
 
-void	clean_screen()
-{
-	printf("\e[1;1H\e[2J");
+void	gen_indices(const char *s, int *idxs, size_t len) {
+	
+	for (size_t i = 0; i < len; i++) {
+		if (isnumber(s[i])) {
+			idxs[i] = s[i] - '0';
+		} else if (isalpha(s[i])) {
+			idxs[i] = 10 + toupper(s[i]) - 'A';
+		} else {
+			idxs[i] = 36;
+		}
+	}
 }
 
-void	set_color(const char *color)
-{
-	printf("%s", color);
-}
+int		main(int ac, char **av) {
 
+	// Default is "21"
+	char *s = (ac < 2 || !av[1][0]) ? "21" : av[1];
 
-int		main(void)
-{
-	while (1)
-		print_logo();
+	size_t len = strlen(s);
+	int *idxs = alloca(len * sizeof(int));
+	gen_indices(s, idxs, len);
+
+	while (1) {
+		logo_cycle(idxs, len);
+	}
+
 	return (0);
 }

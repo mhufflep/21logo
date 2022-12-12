@@ -4,7 +4,7 @@ NAME = logo
 
 CC = gcc
 
-CFLAGS			= -Wall -Wextra -Werror
+CFLAGS			= -Wall -Wextra -Werror -std=c11
 INCLUDE_FLAGS 	= -I $(INC_DIR)
 
 INC_DIR 	 = include
@@ -22,7 +22,7 @@ all: obj_directory $(NAME)
 obj_directory:
 	@mkdir -p $(OBJ_DIR)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	@$(CC) $(CFLAGS) -c $< $(INCLUDE_FLAGS) -o $@
 
 $(NAME): $(OBJECTS) 
