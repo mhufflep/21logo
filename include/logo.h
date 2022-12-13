@@ -77,9 +77,10 @@ const int symbols[] = {
 
 
 void		logo_cycle(int *idxs, size_t len);
-
-void        print_closed_line(const char *color);
+void	    print_logo(int opened[], int idxs[], int idxs_len);
+void 	    print_line(int opened[], int idxs[], int idxs_len, int line_num, int offset);
 void		print_opened_line(const char *color, char line);
+void        print_closed_line(const char *color);
 void        print_symbol(const char c, const char *color);
 
 void		delay(int milli_seconds); 
