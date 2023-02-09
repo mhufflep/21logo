@@ -9,10 +9,11 @@ inline
 void 	print_line(int opened[], int idxs[], int idxs_len, int line_num, int offset) {
 
 	int i = 0;
+	const int mask = (1 << SYMBOL_WIDTH) - 1;
 	while (i < idxs_len)
 	{
 		const int idx = idxs[i];
-		const char line = (symbols[idx] >> offset) & 0xF;
+		const char line = (symbols[idx] >> offset) & mask;
 		
 		if (opened[line_num]) {
 			print_opened_line(FG_COLOR_WHITE, line);
@@ -44,7 +45,6 @@ void	logo_cycle(int *indices, size_t length) {
 	int line = 0;
 	int opened_lines[SYMBOL_HEIGHT] = { 0 };
 	
-	srand(time(0));
 	while (i < MAX_COUNTER)
 	{
 		// clears screen
@@ -57,9 +57,9 @@ void	logo_cycle(int *indices, size_t length) {
 		print_logo(opened_lines, indices, length);
 		i++;
 	
-		delay(DELAY_VALUE_MMS);
+		delay(DELAY_BTWN_FRAMES_MS);
 	}
-	delay(DELAY_BTWN_ITER);
+	delay(DELAY_BTWN_ITER_MS);
 	printf("\n"); 
 }
 
@@ -68,6 +68,7 @@ void	delay(int milli_seconds) {
 	while (clock() < start_time + milli_seconds);
 }
 
+inline
 void	print_opened_line(const char *color, char line) {
 
 	for (size_t i = 0; i < SYMBOL_WIDTH; i++) {
@@ -77,9 +78,6 @@ void	print_opened_line(const char *color, char line) {
 			print_symbol(EMPTY, "");
 		}
 	}
-
-	// Space between letters
-	print_symbol(EMPTY, "");
 }
 
 inline
@@ -88,9 +86,6 @@ void	print_closed_line(const char *color) {
 	for (size_t i = 0; i < SYMBOL_WIDTH; i++) {
 		print_symbol(RANDOM_SYMBOL, color);
 	}
-
-	// Space between letters
-	print_symbol(RANDOM_SYMBOL, color);
 }
 
 inline 
@@ -113,6 +108,7 @@ void	gen_indices(const char *s, int *idxs, size_t len) {
 		} else if (isalpha(s[i])) {
 			idxs[i] = 10 + toupper(s[i]) - 'A';
 		} else {
+			// space
 			idxs[i] = 36;
 		}
 	}
@@ -126,6 +122,7 @@ int		main(int ac, char **av) {
 	size_t len = strlen(s);
 	int *idxs = alloca(len * sizeof(int));
 	gen_indices(s, idxs, len);
+	srand(time(0));
 
 	while (1) {
 		logo_cycle(idxs, len);
